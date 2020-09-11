@@ -1,3 +1,4 @@
+const http = require('http');
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 
@@ -19,6 +20,10 @@ const formatMessage = (players) => {
   })
   return formatedMsgArray.length === 0 ? 'Список пуст' : formatedMsgArray.join('\n')
 };
+
+const isAdmin = (user) => {
+  return user.status == 'creator' || user.status == 'administrator'
+}
 
 bot.onText(/\+/, (msg) => {
   const chatId = msg.chat.id;
@@ -50,9 +55,15 @@ bot.onText(/\/list/, (msg) => {
 });
 
 bot.onText(/\/clear/, (msg) => {
-  const chatId = msg.chat.id;
-  players.splice(0, players.length)
-  bot.sendMessage(chatId, 'Список пустой');
+  bot.getChatMember(msg.chat.id, msg.from.id).then(user => {
+		if (isAdmin(user)) {
+			const chatId = msg.chat.id;
+      players.splice(0, players.length)
+      bot.sendMessage(chatId, 'Список пустой');
+		} else{
+			bot.sendMessage(msg.id, 'Нет прав очищать список');
+		}
+	});
 });
 
 bot.onText(/\/add/, (msg, match) => {
@@ -99,3 +110,10 @@ bot.onText(/\/remove/, (msg, match) => {
   players.splice(+index - 1, 1);
   bot.sendMessage(chatId, formatMessage(players));
 });
+
+http.createServer(function (req, res) {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Hello World\n');
+}).listen(3005, 'localhost');
+
+console.log('Server running at http://localhost:3005/');
